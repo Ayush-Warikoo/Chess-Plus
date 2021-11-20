@@ -1,13 +1,11 @@
 import requests
-from chessdotcom import get_player_stats, get_leaderboards
+from chessdotcom import get_player_stats
 from bs4 import BeautifulSoup
 from typing import Final
 
 TITLES: Final = ["WNM", "WCM", "WFM", "WIM", "WGM", "NM", "CM", "FM", "IM", "GM"]
 MODES: Final = ["bullet", "blitz", "rapid"]
 
-# TODO: Add a GM number
-# TODO: More robust if you stop when next FIDE rating is lower than current rating
 def get_rank_1_number(username, mode, verbose=False):
   if mode not in MODES:
     raise Exception("Invalid mode")
@@ -17,26 +15,36 @@ def get_rank_1_number(username, mode, verbose=False):
     black = ""
   visited = set()
   
-  data = get_leaderboards().json
-  top_player = data["leaderboards"]["live_" + mode][0]["username"]
-  number = 0
+  number = -1
+  prevRating = -1
+  rating = 0
   
-  while (top_player != username):
+  while (prevRating < rating):
     visited.add(username)
-    if (verbose):
-      print(username)
+
+    # Get player stats
     try:
       player_stats = get_player_stats(username).json
     except:
       print("username: \'" + username + "\' does not exist")
       return None
-
+    
+    # Get new best rating win
     try:
       best_game = player_stats["stats"]["chess_" + mode]["best"]["game"]
+      prevRating = rating
+      rating = player_stats["stats"]["chess_" + mode]["best"]["rating"]
     except:
       print("username: \'" + username + "\' does not have a best game under mode: \'" + mode + "\'")
       return None
+
+    # Break if highest rating has already been reached
+    if(prevRating > rating):
+      break
+    if (verbose):
+      print(str(number + 1) + ": " + username)
     
+    # Get opponent of best rating win
     page = requests.get(best_game).text
     soup = BeautifulSoup(page, 'html.parser')
     title = soup.title.text.split(" ")
@@ -46,14 +54,72 @@ def get_rank_1_number(username, mode, verbose=False):
     else:
       Colour.white = title[1]
       Colour.black = title[4] if title[3] in TITLES else title[3]
+    username = Colour.white if username == Colour.black else Colour.black
+
+    if(username in visited):
+      print("There appears to be no path/number to #1")
+      return None
+    number += 1
+
+  print("Your rank 1 number/distance is: " + str(number))
+  return number
+
+def get_titled_number(username, mode, title_list=TITLES, verbose=False):
+  if mode not in MODES:
+    raise Exception("Invalid mode")  
+  class Colour:
+    white = ""
+    black = ""
+  visited = set()
+  
+  number = 0
+  game_title = []
+  if(verbose):
+    print("0: " + username)
+  
+  while (set(title_list).isdisjoint(game_title)):
+    visited.add(username)
+        
+    # Get player stats
+    try:
+      player_stats = get_player_stats(username).json
+    except:
+      print("username: \'" + username + "\' does not exist")
+      return None
+    
+    # Get best rating win
+    try:
+      best_game = player_stats["stats"]["chess_" + mode]["best"]["game"]
+    except:
+      print("username: \'" + username + "\' does not have a best game under mode: \'" + mode + "\'")
+      return None
+
+    # Get opponent of best rating win
+    page = requests.get(best_game).text
+    soup = BeautifulSoup(page, 'html.parser')
+    game_title = soup.title.text.split(" ")
+      
+    if(game_title[1] in TITLES):
+      Colour.white = game_title[2]
+      Colour.black = game_title[5] if game_title[4] in TITLES else game_title[4]
+    else:
+      Colour.white = game_title[1]
+      Colour.black = game_title[4] if game_title[3] in TITLES else game_title[3]
       
     username = Colour.white if username == Colour.black else Colour.black
+    
     if(username in visited):
-      print("Unfortunately there appears to be no path/number to #1")
+      print("There appears to be no path/number to title(s): " + title_list)
       return None
-    if(username == top_player and verbose):
-      print(top_player)
-
+    
     number += 1
-  print(number)
+    
+    if (verbose):
+      print(str(number) + ": " + username)
+    
+    # Break if desired title is reached
+    if(not set(title_list).isdisjoint(game_title)):
+      break;
+
+  print("Your titled number/distance is: " + str(number))
   return number
