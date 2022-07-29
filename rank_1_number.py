@@ -10,9 +10,8 @@ def get_rank_1_number(username, mode, verbose=False):
   if mode not in MODES:
     raise Exception("Invalid mode")
   
-  class Colour:
-    white = ""
-    black = ""
+  white = ""
+  black = ""
   visited = set()
   
   number = -1
@@ -49,12 +48,12 @@ def get_rank_1_number(username, mode, verbose=False):
     soup = BeautifulSoup(page, 'html.parser')
     title = soup.title.text.split(" ")
     if(title[1] in TITLES):
-      Colour.white = title[2]
-      Colour.black = title[5] if title[4] in TITLES else title[4]
+      white = title[2]
+      black = title[5] if title[4] in TITLES else title[4]
     else:
-      Colour.white = title[1]
-      Colour.black = title[4] if title[3] in TITLES else title[3]
-    username = Colour.white if username == Colour.black else Colour.black
+      white = title[1]
+      black = title[4] if title[3] in TITLES else title[3]
+    username = white if username == black else black
 
     if(username in visited):
       print("There appears to be no path/number to #1")
@@ -66,10 +65,10 @@ def get_rank_1_number(username, mode, verbose=False):
 
 def get_titled_number(username, mode, title_list=TITLES, verbose=False):
   if mode not in MODES:
-    raise Exception("Invalid mode")  
-  class Colour:
-    white = ""
-    black = ""
+    raise Exception("Invalid mode")
+
+  white = ""
+  black = ""
   visited = set()
   
   number = 0
@@ -100,13 +99,13 @@ def get_titled_number(username, mode, title_list=TITLES, verbose=False):
     game_title = soup.title.text.split(" ")
       
     if(game_title[1] in TITLES):
-      Colour.white = game_title[2]
-      Colour.black = game_title[5] if game_title[4] in TITLES else game_title[4]
+      white = game_title[2]
+      black = game_title[5] if game_title[4] in TITLES else game_title[4]
     else:
-      Colour.white = game_title[1]
-      Colour.black = game_title[4] if game_title[3] in TITLES else game_title[3]
+      white = game_title[1]
+      black = game_title[4] if game_title[3] in TITLES else game_title[3]
       
-    username = Colour.white if username == Colour.black else Colour.black
+    username = white if username == black else black
     
     if(username in visited):
       print("There appears to be no path/number to title(s): " + title_list)
